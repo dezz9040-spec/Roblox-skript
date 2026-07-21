@@ -1,4 +1,4 @@
-[21.07.2026 15:51] Step: local Players = game:GetService("Players")
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local lp = Players.LocalPlayer
@@ -12,66 +12,22 @@ local VALID_KEYS = {
 }
 
 local settings = {
-    Aimbot = false,       -- Обычный аимбот (по FOV)
-    Aim1_0 = false,       -- Аимбот 360 (игнорит FOV и экран, крутит камеру)
-    Aim2_0 = false,       -- Silent Aim 360 (пули летят сами, камера на месте)
+    Aimbot = false,       -- Обычный аимбот (наводит твою камеру)
     Bunnyhop = false,     -- Нормальный бхоп с реальным разгоном
     ESP = false,          -- ВХ с никами и заливкой
     Spinbot = false,      -- Крутилка
-    FovRadius = 300,
-    KillSoundId = "rbxassetid://28686419" -- Сюда впиши ID своего звука
+    FovRadius = 300
 }
 
 local friendsList = {}
-local SilentTarget = nil
-local lastTarget = nil
 
-------------------------------------------------------------------
--- [ ХУКИ ДЛЯ SILENT AIM (AIM 2.0) ] --
-------------------------------------------------------------------
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-    
-    -- Сначала проверяем checkcaller(), чтобы минимизировать нагрузку на поток
-    if not checkcaller() and settings.Aim2_0 and SilentTarget then
-        if method == "Raycast" and self == workspace then
-            local origin = args[1]
-            args[2] = (SilentTarget.Position - origin).Unit * 1000 
-            return oldNamecall(self, unpack(args))
-        elseif method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList" or method == "FindPartOnRayWithWhitelist" then
-            local ray = args[1]
-            args[1] = Ray.new(ray.Origin, (SilentTarget.Position - ray.Origin).Unit * 1000)
-            return oldNamecall(self, unpack(args))
-        end
-    end
-    
-    return oldNamecall(self, ...)
-end))
-
-local oldIndex
-oldIndex = hookmetamethod(game, "__index", newcclosure(function(self, key)
-    if not checkcaller() and settings.Aim2_0 and SilentTarget then
-        if tostring(self) == "Mouse" then
-            if key == "Hit" then
-                return SilentTarget.CFrame
-            elseif key == "Target" then
-                return SilentTarget
-            end
-        end
-    end
-    return oldIndex(self, key)
-end))
-------------------------------------------------------------------
--- GUI КОНТЕЙНЕР
-------------------------------------------------------------------
+-- Главный контейнер
 local screenGui = Instance.new("ScreenGui", lp.PlayerGui)
 screenGui.Name = "DezzCSGOStyle"
 screenGui.ResetOnSpawn = false
 
 ------------------------------------------------------------------
--- ОКНО АВТОРИЗАЦИИ
+-- ОКНО АВТОРИЗАЦИИ (СИСТЕМА КЛЮЧЕЙ)
 ------------------------------------------------------------------
 local keyGui = Instance.new("Frame", screenGui)
 keyGui.Size = UDim2.new(0, 320, 0, 160)
@@ -96,7 +52,7 @@ keyTitle.TextSize = 14
 keyTitle.Text = "DEZZ V16 // KEY AUTHORIZATION"
 
 local keyBox = Instance.new("TextBox", keyGui)
-[21.07.2026 15:51] Step: keyBox.Size = UDim2.new(0.85, 0, 0, 38)
+keyBox.Size = UDim2.new(0.85, 0, 0, 38)
 keyBox.Position = UDim2.new(0.075, 0, 0.35, 0)
 keyBox.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 keyBox.TextColor3 = Color3.fromRGB(0, 255, 128)
@@ -120,7 +76,7 @@ local sCorner = Instance.new("UICorner", submitBtn)
 sCorner.CornerRadius = UDim.new(0, 6)
 
 ------------------------------------------------------------------
--- ОСНОВНОЕ МЕНЮ
+-- ОСНОВНОЕ МЕНЮ (СКРЫТО ДО ВВОДА КЛЮЧА)
 ------------------------------------------------------------------
 local openBtn = Instance.new("TextButton", screenGui)
 openBtn.Size = UDim2.new(0, 60, 0, 35)
@@ -167,6 +123,7 @@ openBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
 end)
 
+-- Проверка ключа по нажатию кнопки
 submitBtn.MouseButton1Click:Connect(function()
     local enteredKey = string.upper(keyBox.Text)
     if VALID_KEYS[enteredKey] then
@@ -179,6 +136,7 @@ submitBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Сетка кнопок (по 3 в ряд)
 local gridContainer = Instance.new("Frame", mainFrame)
 gridContainer.Size = UDim2.new(0.94, 0, 0.65, 0)
 gridContainer.Position = UDim2.new(0.03, 0, 0.18, 0)
@@ -200,7 +158,8 @@ local function createToggle(name, stateKey)
     
     local corner = Instance.new("UICorner", btn)
     corner.CornerRadius = UDim.new(0, 6)
-[21.07.2026 15:51] Step: local indicator = Instance.new("Frame", btn)
+    
+    local indicator = Instance.new("Frame", btn)
     indicator.Size = UDim2.new(0, 8, 0, 8)
     indicator.Position = UDim2.new(0.85, 0, 0.4, 0)
     indicator.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
@@ -222,14 +181,12 @@ local function createToggle(name, stateKey)
     return btn
 end
 
-createToggle("Aimbot (FOV)", "Aimbot")
-createToggle("Aim 1.0 (360)", "Aim1_0")
-createToggle("Aim 2.0 (Silent)", "Aim2_0")
-createToggle("ESP (Wallhack)", "ESP")
+createToggle("Aimbot", "Aimbot")
 createToggle("Bunnyhop (Boost)", "Bunnyhop")
+createToggle("ESP (Wallhack)", "ESP")
 createToggle("Spinbot", "Spinbot")
 
--- Управление друзьями
+-- Кнопка друзей
 local friendsBtn = Instance.new("TextButton", mainFrame)
 friendsBtn.Size = UDim2.new(0.94, 0, 0, 32)
 friendsBtn.Position = UDim2.new(0.03, 0, 0.85, 0)
@@ -241,6 +198,7 @@ friendsBtn.Text = "Управление друзьями"
 local fCorner = Instance.new("UICorner", friendsBtn)
 fCorner.CornerRadius = UDim.new(0, 6)
 
+-- Окно друзей
 local friendsFrame = Instance.new("Frame", screenGui)
 friendsFrame.Size = UDim2.new(0, 220, 0, 250)
 friendsFrame.Position = UDim2.new(0.4, 0, 0.3, 0)
@@ -303,7 +261,8 @@ refreshPlayerList = function()
         end
     end
 end
-[21.07.2026 15:51] Step: Players.PlayerAdded:Connect(refreshPlayerList)
+
+Players.PlayerAdded:Connect(refreshPlayerList)
 Players.PlayerRemoving:Connect(refreshPlayerList)
 refreshPlayerList()
 
@@ -399,37 +358,6 @@ local function updateESP()
     end
 end
 
-------------------------------------------------------------------
--- СИСТЕМА KILL SOUND
-------------------------------------------------------------------
-local killSound = Instance.new("Sound")
-killSound.SoundId = settings.KillSoundId
-killSound.Volume = 2
-killSound.Parent = workspace
-[21.07.2026 15:51] Step: local function setupKillTracker(player)
-    if player == lp then return end
-    
-    player.CharacterAdded:Connect(function(char)
-        local hum = char:WaitForChild("Humanoid", 5)
-        if hum then
-            hum.Died:Connect(function()
-                if lastTarget and lastTarget.Parent == char then
-                    killSound:Play()
-                    lastTarget = nil
-                end
-            end)
-        end
-    end)
-end
-
-for _, p in ipairs(Players:GetPlayers()) do
-    setupKillTracker(p)
-end
-Players.PlayerAdded:Connect(setupKillTracker)
-
-------------------------------------------------------------------
--- MAIN RENDER LOOP
-------------------------------------------------------------------
 RunService.RenderStepped:Connect(function()
     updateESP()
     
@@ -456,53 +384,24 @@ RunService.RenderStepped:Connect(function()
     end
     
     local closest = nil
-    -- Если работает 360 аим (1.0 или 2.0) - радиус бесконечный, иначе берем FOV
-    local dist = (settings.Aim1_0 or settings.Aim2_0) and math.huge or settings.FovRadius
+    local dist = settings.FovRadius
     
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= lp and not friendsList[p.Name] and p.Character then
-            local pRoot = p.Character:FindFirstChild("HumanoidRootPart")
-            local pHum = p.Character:FindFirstChild("Humanoid")
+        if p ~= lp and not friendsList[p.Name] and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+            local root = p.Character.HumanoidRootPart
+            local pos, onScreen = camera:WorldToViewportPoint(root.Position)
             
-            if pRoot and pHum and pHum.Health > 0 then
-                local pos, onScreen = camera:WorldToViewportPoint(pRoot.Position)
-                
-                if (onScreen or settings.Aim1_0 or settings.Aim2_0) then
-                    local d
-                    if (settings.Aim1_0 or settings.Aim2_0) then
-                        d = (pRoot.Position - rootPart.Position).Magnitude
-                    else
-                        d = (Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2) - Vector2.new(pos.X, pos.Y)).Magnitude
-                    end
-                    
-                    if d < dist and isValidTarget(pRoot, p.Name) then
-                        closest = pRoot
-                        dist = d
-                    end
+            if onScreen then
+                local d = (Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2) - Vector2.new(pos.X, pos.Y)).Magnitude
+                if d < dist and isValidTarget(root, p.Name) then
+                    closest = root
+                    dist = d
                 end
             end
         end
     end
     
-    if closest then
-        -- Если включен обычный или 1.0 - дергаем камеру
-        if settings.Aimbot or settings.Aim1_0 then
-            camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
-        end
-        
-        -- Если включен сайлент 2.0 - обновляем переменную для хуков
-        if settings.Aim2_0 then
-            SilentTarget = closest
-        else
-            SilentTarget = nil
-        end
-        
-        -- Для kill sound'а
-        lastTarget = closest.Parent:FindFirstChild("Humanoid")
-    else
-        SilentTarget = nil
-        if not (settings.Aimbot or settings.Aim1_0 or settings.Aim2_0) then
-            lastTarget = nil
-        end
+    if settings.Aimbot and closest then
+        camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
     end
 end)
