@@ -25,17 +25,17 @@ local settings = {
 
 local friendsList = {}
 
--- Мгновенный выстрел и снятие задержки с оружия
+-- Мгновенный выстрел без задержек
 local function triggerShoot()
     pcall(function()
         local char = lp.Character
         if char then
             local tool = char:FindFirstChildOfClass("Tool")
             if tool then
-                -- Снимаем стандартные задержки, если они есть в скриптах оружия
                 for _, v in pairs(tool:GetDescendants()) do
                     if v:IsA("NumberValue") or v:IsA("IntValue") then
-                        if v.Name:lower():find("cooldown") or v.Name:lower():find("firerate") or v.Name:lower():find("delay") then
+                        local n = v.Name:lower()
+                        if n:find("cooldown") or n:find("firerate") or n:find("delay") or n:find("fire") then
                             v.Value = 0
                         end
                     end
@@ -390,6 +390,7 @@ local function isValidTarget(targetPart, playerName)
     return true
 end
 
+-- Обновленный ESP: жирная заливка, мелкие ники
 local function updateESP()
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= lp and player.Character then
@@ -399,8 +400,8 @@ local function updateESP()
                 if not hl then
                     hl = Instance.new("Highlight")
                     hl.Name = "DezzHighlight"
-                    hl.FillTransparency = 0.3
-                    hl.OutlineTransparency = 0
+                    hl.FillTransparency = 0.15  -- Пожирнее заливка
+                    hl.OutlineTransparency = 0  -- Четкий контур
                     hl.Parent = altChar
                 end
                 hl.Adornee = altChar
@@ -411,23 +412,23 @@ local function updateESP()
                     hl.FillColor = Color3.fromRGB(0, 255, 128)
                     hl.OutlineColor = Color3.fromRGB(0, 100, 50)
                 else
-                    hl.FillColor = Color3.fromRGB(255, 40, 40)
-                    hl.OutlineColor = Color3.fromRGB(120, 10, 10)
+                    hl.FillColor = Color3.fromRGB(255, 30, 30)
+                    hl.OutlineColor = Color3.fromRGB(150, 0, 0)
                 end
                 
                 local head = altChar:FindFirstChild("Head")
                 if head and not head:FindFirstChild("DezzTag") then
                     local bb = Instance.new("BillboardGui", head)
                     bb.Name = "DezzTag"
-                    bb.Size = UDim2.new(0, 120, 0, 50)
-                    bb.StudsOffset = Vector3.new(0, 2.5, 0)
+                    bb.Size = UDim2.new(0, 100, 0, 30)
+                    bb.StudsOffset = Vector3.new(0, 2.2, 0)
                     bb.AlwaysOnTop = true
                     
                     local lbl = Instance.new("TextLabel", bb)
                     lbl.Size = UDim2.new(1, 0, 1, 0)
                     lbl.BackgroundTransparency = 1
                     lbl.TextStrokeTransparency = 0
-                    lbl.TextSize = 14
+                    lbl.TextSize = 11  -- Сделали ник мельче
                     lbl.Font = Enum.Font.GothamBold
                     lbl.Text = player.Name
                 end
@@ -466,7 +467,7 @@ RunService.RenderStepped:Connect(function()
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     local rootPart = char:FindFirstChild("HumanoidRootPart")
     
-    -- Постоянный Bunnyhop с ускорением 1.5x
+    -- Bunnyhop 1.5x
     if settings.Bunnyhop and humanoid and rootPart then
         if humanoid.FloorMaterial ~= Enum.Material.Air then
             humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
@@ -528,7 +529,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
-    -- Aimbot 2.0 (Silent / NoCam)
+    -- Aimbot 2.0 (Silent)
     if settings.Aimbot2 then
         local closest = nil
         local dist = 99999
