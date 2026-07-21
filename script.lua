@@ -12,34 +12,38 @@ local VALID_KEYS = {
 }
 
 local settings = {
-    Aimbot1 = false,      -- Классический 360 аимбот
-    Aimbot2 = false,      -- Аимбот без движения камеры (Silent)
-    Bunnyhop = false,     
-    ESP = false,          
-    Spinbot = false,      
-    KillSound = true,     -- Звук при убийстве
-    FovRadius = 9999      -- Полный охват 360 градусов
+    Aimbot1 = false,
+    Aimbot2 = false,
+    Bunnyhop = false,
+    ESP = false,
+    Spinbot = false,
+    KillSound = true,
+    FovRadius = 9999
 }
 
 local friendsList = {}
 local trackedHealths = {}
 
--- Воспроизведение звука при килле
 local function playKillSound()
     if not settings.KillSound then return end
-    local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://6534947936" -- Можешь заменить ID на свой
-    sound.Volume = 1
-    sound.Parent = SoundService
-    sound:Play()
-    sound.Ended:Connect(function()
-        sound:Destroy()
+    pcall(function()
+        local sound = Instance.new("Sound")
+        sound.SoundId = "rbxassetid://6534947936"
+        sound.Volume = 1
+        sound.Parent = SoundService
+        sound:Play()
+        sound.Ended:Connect(function()
+            sound:Destroy()
+        end)
     end)
 end
 
-local screenGui = Instance.new("ScreenGui", lp.PlayerGui)
+-- Безопасное создание UI с привязкой к PlayerGui
+local playerGui = lp:WaitForChild("PlayerGui")
+local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "DezzCSGOStyle"
 screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
 
 ------------------------------------------------------------------
 -- ОКНО АВТОРИЗАЦИИ
@@ -64,7 +68,7 @@ keyTitle.BackgroundTransparency = 1
 keyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 keyTitle.Font = Enum.Font.GothamBold
 keyTitle.TextSize = 14
-keyTitle.Text = "DEZZ V17 // KEY AUTHORIZATION"
+keyTitle.Text = "DEZZ V16 // KEY AUTHORIZATION"
 
 local keyBox = Instance.new("TextBox", keyGui)
 keyBox.Size = UDim2.new(0.85, 0, 0, 38)
@@ -143,6 +147,7 @@ submitBtn.MouseButton1Click:Connect(function()
     if VALID_KEYS[enteredKey] then
         keyGui:Destroy()
         openBtn.Visible = true
+        mainFrame.Visible = true
     else
         keyBox.Text = ""
         keyBox.PlaceholderText = "НЕВЕРНЫЙ КЛЮЧ!"
@@ -236,8 +241,7 @@ friendsBtn.MouseButton1Click:Connect(function()
     friendsFrame.Visible = not friendsFrame.Visible
 end)
 
-local refreshPlayerList
-refreshPlayerList = function()
+local refreshPlayerList = function()
     for _, child in pairs(scrollList:GetChildren()) do
         if child:IsA("TextButton") then child:Destroy() end
     end
@@ -281,7 +285,6 @@ refreshPlayerList()
 
 local function isValidTarget(targetPart, playerName)
     if friendsList[playerName] then return false end
-    
     local origin = camera.CFrame.Position
     local direction = (targetPart.Position - origin)
     local raycastParams = RaycastParams.new()
@@ -310,71 +313,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-local function updateESP()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= lp and player.Character then
-            local altChar = player.Character
-            if settings.ESP then
-                local hl = altChar:FindFirstChild("DezzHighlight")
-                if not hl then
-                    hl = Instance.new("Highlight")
-                    hl.Name = "DezzHighlight"
-                    hl.FillTransparency = 0.3
-                    hl.OutlineTransparency = 0
-                    hl.Parent = altChar
-                end
-                hl.Adornee = altChar
-                hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                
-                local isFriend = friendsList[player.Name]
-                if isFriend then
-                    hl.FillColor = Color3.fromRGB(0, 255, 128)
-                    hl.OutlineColor = Color3.fromRGB(0, 100, 50)
-                else
-                    hl.FillColor = Color3.fromRGB(255, 40, 40)
-                    hl.OutlineColor = Color3.fromRGB(120, 10, 10)
-                end
-                
-                local head = altChar:FindFirstChild("Head")
-                if head and not head:FindFirstChild("DezzTag") then
-                    local bb = Instance.new("BillboardGui", head)
-                    bb.Name = "DezzTag"
-                    bb.Size = UDim2.new(0, 120, 0, 50)
-                    bb.StudsOffset = Vector3.new(0, 2.5, 0)
-                    bb.AlwaysOnTop = true
-                    
-                    local lbl = Instance.new("TextLabel", bb)
-                    lbl.Size = UDim2.new(1, 0, 1, 0)
-                    lbl.BackgroundTransparency = 1
-                    lbl.TextStrokeTransparency = 0
-                    lbl.TextSize = 14
-                    lbl.Font = Enum.Font.GothamBold
-                    lbl.Text = player.Name
-                end
-                
-                if head and head:FindFirstChild("DezzTag") then
-                    local lbl = head.DezzTag:FindFirstChildOfClass("TextLabel")
-                    if lbl then
-                        lbl.TextColor3 = isFriend and Color3.fromRGB(0, 255, 128) or Color3.fromRGB(255, 80, 80)
-                    end
-                end
-            else
-                local hl = altChar:FindFirstChild("DezzHighlight")
-                if hl then hl:Destroy() end
-                local head = altChar:FindFirstChild("Head")
-                if head then
-                    local bb = head:FindFirstChild("DezzTag")
-                    if bb then bb:Destroy() end
-                end
-            end
-        end
-    end
-end
-
 RunService.RenderStepped:Connect(function()
-    updateESP()
-    
-    -- Отслеживание здоровья для звука убийств
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= lp and p.Character and p.Character:FindFirstChildOfClass("Humanoid") then
             local hum = p.Character.Humanoid
@@ -405,10 +344,8 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
-    if settings.Spinbot then
-        if rootPart then
-            rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(60), 0)
-        end
+    if settings.Spinbot and rootPart then
+        rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(60), 0)
     end
     
     local closest = nil
@@ -425,13 +362,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
-    -- Aimbot 1.0 (Камера наводится)
     if settings.Aimbot1 and closest then
         camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
-    end
-    
-    -- Aimbot 2.0 (Экран не наводится, логика работает в фоне)
-    if settings.Aimbot2 and closest then
-        -- Скрипт видит цель и может фиксировать хит/направление, но камеру не трогает
     end
 end)
