@@ -15,7 +15,7 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 320, 0, 420)
+mainFrame.Size = UDim2.new(0, 260, 0, 320)
 mainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.Active = true
@@ -29,21 +29,22 @@ title.Size = UDim2.new(1, 0, 0, 40)
 title.BackgroundTransparency = 1
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 14
-title.Text = "ВЫБОР УРОВНЯ ДЛЯ ТЕЛЕПОРТА"
+title.TextSize = 13
+title.Text = "ВЫБОР УРОВНЯ"
 
 local scrollFrame = Instance.new("ScrollingFrame", mainFrame)
-scrollFrame.Size = UDim2.new(0.9, 0, 0.82, 0)
-scrollFrame.Position = UDim2.new(0.05, 0, 0.12, 0)
+scrollFrame.Size = UDim2.new(0.9, 0, 0.78, 0)
+scrollFrame.Position = UDim2.new(0.05, 0, 0.16, 0)
 scrollFrame.BackgroundTransparency = 1
+scrollFrame.ScrollBarThickness = 6
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-scrollFrame.ScrollBarThickness = 4
 
 local uiList = Instance.new("UIListLayout", scrollFrame)
 uiList.SortOrder = Enum.SortOrder.LayoutOrder
 uiList.Padding = UDim.new(0, 6)
 
--- Список готовых координат по уровням
+-- Список твоих уровней (телепортация без копирования)
 local levels = {
     CFrame.new(12.0527391, 4.26973724, 163.570389, -0.0433352664, 0, -0.999060571, 0, 1, 0, 0.999060571, 0, -0.0433352664),
     CFrame.new(207.796875, 4.26973724, 164.644745, -0.0823348612, 0, -0.996604741, 0, 1, 0, 0.996604741, 0, -0.0823348612),
@@ -58,12 +59,12 @@ local levels = {
 
 for i, targetCFrame in ipairs(levels) do
     local pointBtn = Instance.new("TextButton", scrollFrame)
-    pointBtn.Size = UDim2.new(1, 0, 0, 35)
+    pointBtn.Size = UDim2.new(1, -6, 0, 35)
     pointBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
     pointBtn.TextColor3 = Color3.fromRGB(200, 255, 200)
     pointBtn.Font = Enum.Font.GothamMedium
-    pointBtn.TextSize = 11
-    pointBtn.Text = string.format("Level %d (%.1f, %.1f, %.1f)", i, targetCFrame.X, targetCFrame.Y, targetCFrame.Z)
+    pointBtn.TextSize = 12
+    pointBtn.Text = "Level " .. i
     
     local btnCorner = Instance.new("UICorner", pointBtn)
     btnCorner.CornerRadius = UDim.new(0, 5)
@@ -72,10 +73,5 @@ for i, targetCFrame in ipairs(levels) do
         if rootPart then
             rootPart.CFrame = targetCFrame
         end
-        if setclipboard then
-            setclipboard(tostring(targetCFrame))
-        end
     end)
 end
-
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, uiList.AbsoluteContentSize.Y + 10)
