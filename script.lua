@@ -6,19 +6,20 @@ local lp = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 local VALID_KEYS = {
-    ["DZV15K9X4M2P"] = true,
-    ["ROBLOX777XYZ"] = true,
-    ["DEZZPRO99ABC"] = true
+    ["2026"] = true,
+    ["1"] = true,
+    ["free"] = true
 }
 
 local settings = {
-    Aimbot1 = false,
-    Aimbot2 = false,
-    Bunnyhop = false,
-    ESP = false,
-    Spinbot = false,
-    KillSound = true,
-    FovRadius = 9999
+    Aimbot = false,       -- Обычный (с ограничением FOV)
+    Aimbot1 = false,      -- 360 градусов (с доводкой камеры)
+    Aimbot2 = false,      -- Без движения камеры (Silent)
+    Bunnyhop = false,     
+    ESP = false,          
+    Spinbot = false,      
+    KillSound = true,     
+    FovRadius = 250       -- Радиус для обычного аимбота
 }
 
 local friendsList = {}
@@ -38,7 +39,6 @@ local function playKillSound()
     end)
 end
 
--- Безопасное создание UI с привязкой к PlayerGui
 local playerGui = lp:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "DezzCSGOStyle"
@@ -116,7 +116,7 @@ btnStroke.Color = Color3.fromRGB(0, 255, 128)
 btnStroke.Transparency = 0.3
 
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 480, 0, 280)
+mainFrame.Size = UDim2.new(0, 480, 0, 310)
 mainFrame.Position = UDim2.new(0.1, 0, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 mainFrame.Visible = false
@@ -156,13 +156,13 @@ submitBtn.MouseButton1Click:Connect(function()
 end)
 
 local gridContainer = Instance.new("Frame", mainFrame)
-gridContainer.Size = UDim2.new(0.94, 0, 0.65, 0)
-gridContainer.Position = UDim2.new(0.03, 0, 0.18, 0)
+gridContainer.Size = UDim2.new(0.94, 0, 0.68, 0)
+gridContainer.Position = UDim2.new(0.03, 0, 0.15, 0)
 gridContainer.BackgroundTransparency = 1
 
 local gridLayout = Instance.new("UIGridLayout", gridContainer)
-gridLayout.CellSize = UDim2.new(0, 142, 0, 45)
-gridLayout.CellPadding = UDim2.new(0, 10, 0, 10)
+gridLayout.CellSize = UDim2.new(0, 142, 0, 42)
+gridLayout.CellPadding = UDim2.new(0, 10, 0, 8)
 gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 local function createToggle(name, stateKey)
@@ -199,6 +199,7 @@ local function createToggle(name, stateKey)
     return btn
 end
 
+createToggle("Aimbot (Normal)", "Aimbot")
 createToggle("Aimbot 1.0 (360)", "Aimbot1")
 createToggle("Aimbot 2.0 (NoCam)", "Aimbot2")
 createToggle("Bunnyhop (Boost)", "Bunnyhop")
@@ -208,7 +209,7 @@ createToggle("Kill Sound", "KillSound")
 
 local friendsBtn = Instance.new("TextButton", mainFrame)
 friendsBtn.Size = UDim2.new(0.94, 0, 0, 32)
-friendsBtn.Position = UDim2.new(0.03, 0, 0.86, 0)
+friendsBtn.Position = UDim2.new(0.03, 0, 0.87, 0)
 friendsBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
 friendsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 friendsBtn.Font = Enum.Font.GothamBold
@@ -313,7 +314,70 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
+local function updateESP()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= lp and player.Character then
+            local altChar = player.Character
+            if settings.ESP then
+                local hl = altChar:FindFirstChild("DezzHighlight")
+                if not hl then
+                    hl = Instance.new("Highlight")
+                    hl.Name = "DezzHighlight"
+                    hl.FillTransparency = 0.3
+                    hl.OutlineTransparency = 0
+                    hl.Parent = altChar
+                end
+                hl.Adornee = altChar
+                hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                
+                local isFriend = friendsList[player.Name]
+                if isFriend then
+                    hl.FillColor = Color3.fromRGB(0, 255, 128)
+                    hl.OutlineColor = Color3.fromRGB(0, 100, 50)
+                else
+                    hl.FillColor = Color3.fromRGB(255, 40, 40)
+                    hl.OutlineColor = Color3.fromRGB(120, 10, 10)
+                end
+                
+                local head = altChar:FindFirstChild("Head")
+                if head and not head:FindFirstChild("DezzTag") then
+                    local bb = Instance.new("BillboardGui", head)
+                    bb.Name = "DezzTag"
+                    bb.Size = UDim2.new(0, 120, 0, 50)
+                    bb.StudsOffset = Vector3.new(0, 2.5, 0)
+                    bb.AlwaysOnTop = true
+                    
+                    local lbl = Instance.new("TextLabel", bb)
+                    lbl.Size = UDim2.new(1, 0, 1, 0)
+                    lbl.BackgroundTransparency = 1
+                    lbl.TextStrokeTransparency = 0
+                    lbl.TextSize = 14
+                    lbl.Font = Enum.Font.GothamBold
+                    lbl.Text = player.Name
+                end
+                
+                if head and head:FindFirstChild("DezzTag") then
+                    local lbl = head.DezzTag:FindFirstChildOfClass("TextLabel")
+                    if lbl then
+                        lbl.TextColor3 = isFriend and Color3.fromRGB(0, 255, 128) or Color3.fromRGB(255, 80, 80)
+                    end
+                end
+            else
+                local hl = altChar:FindFirstChild("DezzHighlight")
+                if hl then hl:Destroy() end
+                local head = altChar:FindFirstChild("Head")
+                if head then
+                    local bb = head:FindFirstChild("DezzTag")
+                    if bb then bb:Destroy() end
+                end
+            end
+        end
+    end
+end
+
 RunService.RenderStepped:Connect(function()
+    updateESP()
+    
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= lp and p.Character and p.Character:FindFirstChildOfClass("Humanoid") then
             local hum = p.Character.Humanoid
@@ -348,21 +412,63 @@ RunService.RenderStepped:Connect(function()
         rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(60), 0)
     end
     
-    local closest = nil
-    local dist = settings.FovRadius
-    
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= lp and not friendsList[p.Name] and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-            local root = p.Character.HumanoidRootPart
-            local d = (root.Position - camera.CFrame.Position).Magnitude
-            if d < dist and isValidTarget(root, p.Name) then
-                closest = root
-                dist = d
+    -- Обычный аимбот (с проверкой FOV по экрану)
+    if settings.Aimbot then
+        local closest = nil
+        local dist = settings.FovRadius
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= lp and not friendsList[p.Name] and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                local root = p.Character.HumanoidRootPart
+                local pos, onScreen = camera:WorldToViewportPoint(root.Position)
+                if onScreen then
+                    local d = (Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2) - Vector2.new(pos.X, pos.Y)).Magnitude
+                    if d < dist and isValidTarget(root, p.Name) then
+                        closest = root
+                        dist = d
+                    end
+                end
             end
+        end
+        if closest then
+            camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
+        end
+    end
+
+    -- Aimbot 1.0 (360 градусов, камера наводится)
+    if settings.Aimbot1 then
+        local closest = nil
+        local dist = 99999
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= lp and not friendsList[p.Name] and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                local root = p.Character.HumanoidRootPart
+                local d = (root.Position - camera.CFrame.Position).Magnitude
+                if d < dist and isValidTarget(root, p.Name) then
+                    closest = root
+                    dist = d
+                end
+            end
+        end
+        if closest then
+            camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
         end
     end
     
-    if settings.Aimbot1 and closest then
-        camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
+    -- Aimbot 2.0 (Silent / Без движения камеры, но активный поиск цели)
+    if settings.Aimbot2 then
+        local closest = nil
+        local dist = 99999
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= lp and not friendsList[p.Name] and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                local root = p.Character.HumanoidRootPart
+                local d = (root.Position - camera.CFrame.Position).Magnitude
+                if d < dist and isValidTarget(root, p.Name) then
+                    closest = root
+                    dist = d
+                end
+            end
+        end
+        if closest then
+            -- Цель найдена и зафиксирована в фоне, но камера игрока не двигается
+        end
     end
 end)
