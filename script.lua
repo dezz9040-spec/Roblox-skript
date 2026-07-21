@@ -1,14 +1,12 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local SoundService = game:GetService("SoundService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local lp = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 local VALID_KEYS = {
-    ["2026"] = true,
-    ["1"] = true,
+    ["DZV15K9X4M2P"] = true,
+    ["ROBLOX777XYZ"] = true,
     ["DEZZPRO99ABC"] = true
 }
 
@@ -21,33 +19,30 @@ local settings = {
     Bunnyhop = false,
     ESP = false,
     Spinbot = false,
-    KillSound = true,
     ThirdPerson = false,
     FovRadius = 250
 }
 
 local friendsList = {}
-local trackedHealths = {}
 
-local function playKillSound()
-    if not settings.KillSound then return end
-    pcall(function()
-        local sound = Instance.new("Sound")
-        sound.SoundId = "rbxassetid://6534947936"
-        sound.Volume = 1
-        sound.Parent = SoundService
-        sound:Play()
-        sound.Ended:Connect(function()
-            sound:Destroy()
-        end)
-    end)
-end
-
+-- Мгновенный выстрел и снятие задержки с оружия
 local function triggerShoot()
     pcall(function()
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-        task.wait(0.01)
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+        local char = lp.Character
+        if char then
+            local tool = char:FindFirstChildOfClass("Tool")
+            if tool then
+                -- Снимаем стандартные задержки, если они есть в скриптах оружия
+                for _, v in pairs(tool:GetDescendants()) do
+                    if v:IsA("NumberValue") or v:IsA("IntValue") then
+                        if v.Name:lower():find("cooldown") or v.Name:lower():find("firerate") or v.Name:lower():find("delay") then
+                            v.Value = 0
+                        end
+                    end
+                end
+                tool:Activate()
+            end
+        end
     end)
 end
 
@@ -80,7 +75,7 @@ keyTitle.BackgroundTransparency = 1
 keyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 keyTitle.Font = Enum.Font.GothamBold
 keyTitle.TextSize = 14
-keyTitle.Text = "DEZZ V16 // KEY AUTHORIZATION"
+keyTitle.Text = "DEZZ V16 // FLICK EDITION"
 
 local keyBox = Instance.new("TextBox", keyGui)
 keyBox.Size = UDim2.new(0.85, 0, 0, 38)
@@ -296,10 +291,9 @@ createToggleWithDropdown("Aimbot (Normal)", "Aimbot", "AimbotTrigger")
 createToggleWithDropdown("Aimbot 1.0 (360)", "Aimbot1", "Aimbot1Trigger")
 createToggle("Aimbot 2.0 (Silent)", "Aimbot2")
 createToggle("Third Person", "ThirdPerson")
-createToggle("Bunnyhop (Boost)", "Bunnyhop")
+createToggle("Bunnyhop (1.5x)", "Bunnyhop")
 createToggle("ESP (Wallhack)", "ESP")
 createToggle("Spinbot", "Spinbot")
-createToggle("Kill Sound", "KillSound")
 
 local friendsBtn = Instance.new("TextButton", mainFrame)
 friendsBtn.Size = UDim2.new(0.94, 0, 0, 30)
@@ -396,18 +390,6 @@ local function isValidTarget(targetPart, playerName)
     return true
 end
 
-local isJumping = false
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.Space or input.UserInputType == Enum.UserInputType.Jump then
-        isJumping = true
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.Space or input.UserInputType == Enum.UserInputType.Jump then
-        isJumping = false
-    end
-end)
-
 local function updateESP()
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= lp and player.Character then
@@ -472,25 +454,10 @@ end
 RunService.RenderStepped:Connect(function()
     updateESP()
 
-    -- Логика 3rd Person
     if settings.ThirdPerson then
         lp.CameraMode = Enum.CameraMode.Classic
         lp.CameraMinZoomDistance = 10
         lp.CameraMaxZoomDistance = 15
-    end
-    
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= lp and p.Character and p.Character:FindFirstChildOfClass("Humanoid") then
-            local hum = p.Character.Humanoid
-            if not trackedHealths[p] then
-                trackedHealths[p] = hum.Health
-            else
-                if trackedHealths[p] > 0 and hum.Health <= 0 then
-                    playKillSound()
-                end
-                trackedHealths[p] = hum.Health
-            end
-        end
     end
 
     local char = lp.Character
@@ -499,13 +466,14 @@ RunService.RenderStepped:Connect(function()
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     local rootPart = char:FindFirstChild("HumanoidRootPart")
     
-    if settings.Bunnyhop and humanoid and rootPart and isJumping then
+    -- Постоянный Bunnyhop с ускорением 1.5x
+    if settings.Bunnyhop and humanoid and rootPart then
         if humanoid.FloorMaterial ~= Enum.Material.Air then
             humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            local moveDir = humanoid.MoveDirection
-            if moveDir.Magnitude > 0 then
-                rootPart.Velocity = Vector3.new(moveDir.X * 42, rootPart.Velocity.Y, moveDir.Z * 42)
-            end
+        end
+        local moveDir = humanoid.MoveDirection
+        if moveDir.Magnitude > 0 then
+            rootPart.Velocity = Vector3.new(moveDir.X * (16 * 1.5), rootPart.Velocity.Y, moveDir.Z * (16 * 1.5))
         end
     end
     
@@ -575,7 +543,6 @@ RunService.RenderStepped:Connect(function()
             end
         end
         if closest then
-            -- Silent логика: экран на месте, но автострельба бьет прямо по врагу
             triggerShoot()
         end
     end
