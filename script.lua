@@ -2,24 +2,28 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local SoundService = game:GetService("SoundService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local lp = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 local VALID_KEYS = {
     ["2026"] = true,
     ["1"] = true,
-    ["free"] = true
+    ["DEZZPRO99ABC"] = true
 }
 
 local settings = {
-    Aimbot = false,       -- Обычный (с ограничением FOV)
-    Aimbot1 = false,      -- 360 градусов (с доводкой камеры)
-    Aimbot2 = false,      -- Без движения камеры (Silent)
-    Bunnyhop = false,     
-    ESP = false,          
-    Spinbot = false,      
-    KillSound = true,     
-    FovRadius = 250       -- Радиус для обычного аимбота
+    Aimbot = false,
+    AimbotTrigger = false,
+    Aimbot1 = false,
+    Aimbot1Trigger = false,
+    Aimbot2 = false,
+    Bunnyhop = false,
+    ESP = false,
+    Spinbot = false,
+    KillSound = true,
+    ThirdPerson = false,
+    FovRadius = 250
 }
 
 local friendsList = {}
@@ -36,6 +40,14 @@ local function playKillSound()
         sound.Ended:Connect(function()
             sound:Destroy()
         end)
+    end)
+end
+
+local function triggerShoot()
+    pcall(function()
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+        task.wait(0.01)
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
     end)
 end
 
@@ -116,7 +128,7 @@ btnStroke.Color = Color3.fromRGB(0, 255, 128)
 btnStroke.Transparency = 0.3
 
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 480, 0, 310)
+mainFrame.Size = UDim2.new(0, 480, 0, 350)
 mainFrame.Position = UDim2.new(0.1, 0, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 mainFrame.Visible = false
@@ -135,7 +147,7 @@ titleLabel.BackgroundTransparency = 1
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.TextSize = 14
-titleLabel.Text = "DEZZ V16 // UNLOCKED"
+titleLabel.Text = "DEZZ V16 // FLICK EDITION"
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 openBtn.MouseButton1Click:Connect(function()
@@ -155,22 +167,103 @@ submitBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-local gridContainer = Instance.new("Frame", mainFrame)
-gridContainer.Size = UDim2.new(0.94, 0, 0.68, 0)
-gridContainer.Position = UDim2.new(0.03, 0, 0.15, 0)
-gridContainer.BackgroundTransparency = 1
+local scrollContainer = Instance.new("ScrollingFrame", mainFrame)
+scrollContainer.Size = UDim2.new(0.94, 0, 0.72, 0)
+scrollContainer.Position = UDim2.new(0.03, 0, 0.13, 0)
+scrollContainer.BackgroundTransparency = 1
+scrollContainer.CanvasSize = UDim2.new(0, 0, 1.5, 0)
+scrollContainer.ScrollBarThickness = 4
 
-local gridLayout = Instance.new("UIGridLayout", gridContainer)
-gridLayout.CellSize = UDim2.new(0, 142, 0, 42)
-gridLayout.CellPadding = UDim2.new(0, 10, 0, 8)
+local gridLayout = Instance.new("UIGridLayout", scrollContainer)
+gridLayout.CellSize = UDim2.new(0, 142, 0, 45)
+gridLayout.CellPadding = UDim2.new(0, 10, 0, 10)
 gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-local function createToggle(name, stateKey)
-    local btn = Instance.new("TextButton", gridContainer)
+local function createToggleWithDropdown(name, stateKey, triggerKey)
+    local wrapper = Instance.new("Frame", scrollContainer)
+    wrapper.BackgroundTransparency = 1
+    wrapper.Size = UDim2.new(0, 142, 0, 45)
+
+    local btn = Instance.new("TextButton", wrapper)
+    btn.Size = UDim2.new(1, 0, 1, 0)
     btn.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
     btn.TextColor3 = Color3.fromRGB(180, 180, 200)
     btn.Font = Enum.Font.GothamMedium
-    btn.TextSize = 12
+    btn.TextSize = 11
+    btn.Text = "  " .. name
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(0, 6)
+    
+    local indicator = Instance.new("Frame", btn)
+    indicator.Size = UDim2.new(0, 8, 0, 8)
+    indicator.Position = UDim2.new(0.65, 0, 0.2, 0)
+    indicator.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    local indCorner = Instance.new("UICorner", indicator)
+    indCorner.CornerRadius = UDim.new(1, 0)
+
+    local arrowBtn = Instance.new("TextButton", btn)
+    arrowBtn.Size = UDim2.new(1, 0, 0, 14)
+    arrowBtn.Position = UDim2.new(0, 0, 0.68, 0)
+    arrowBtn.BackgroundTransparency = 1
+    arrowBtn.Text = "▼"
+    arrowBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    arrowBtn.TextSize = 9
+
+    local subPanel = Instance.new("Frame", wrapper)
+    subPanel.Size = UDim2.new(1, 0, 0, 32)
+    subPanel.Position = UDim2.new(0, 0, 1, 4)
+    subPanel.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+    subPanel.Visible = false
+    subPanel.ZIndex = 5
+    local spCorner = Instance.new("UICorner", subPanel)
+    spCorner.CornerRadius = UDim.new(0, 4)
+
+    local trigBtn = Instance.new("TextButton", subPanel)
+    trigBtn.Size = UDim2.new(1, 0, 1, 0)
+    trigBtn.BackgroundTransparency = 1
+    trigBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    trigBtn.Font = Enum.Font.GothamMedium
+    trigBtn.TextSize = 10
+    trigBtn.Text = "[ ] Triggerbot"
+    trigBtn.ZIndex = 6
+
+    btn.MouseButton1Click:Connect(function()
+        settings[stateKey] = not settings[stateKey]
+        if settings[stateKey] then
+            btn.BackgroundColor3 = Color3.fromRGB(20, 40, 30)
+            btn.TextColor3 = Color3.fromRGB(0, 255, 128)
+            indicator.BackgroundColor3 = Color3.fromRGB(0, 255, 128)
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+            btn.TextColor3 = Color3.fromRGB(180, 180, 200)
+            indicator.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+        end
+    end)
+
+    arrowBtn.MouseButton1Click:Connect(function()
+        subPanel.Visible = not subPanel.Visible
+    end)
+
+    trigBtn.MouseButton1Click:Connect(function()
+        settings[triggerKey] = not settings[triggerKey]
+        if settings[triggerKey] then
+            trigBtn.Text = "[✓] Triggerbot"
+            trigBtn.TextColor3 = Color3.fromRGB(0, 255, 128)
+        else
+            trigBtn.Text = "[ ] Triggerbot"
+            trigBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        end
+    end)
+end
+
+local function createToggle(name, stateKey)
+    local btn = Instance.new("TextButton", scrollContainer)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    btn.TextColor3 = Color3.fromRGB(180, 180, 200)
+    btn.Font = Enum.Font.GothamMedium
+    btn.TextSize = 11
     btn.Text = "  " .. name
     btn.TextXAlignment = Enum.TextXAlignment.Left
     
@@ -199,17 +292,18 @@ local function createToggle(name, stateKey)
     return btn
 end
 
-createToggle("Aimbot (Normal)", "Aimbot")
-createToggle("Aimbot 1.0 (360)", "Aimbot1")
-createToggle("Aimbot 2.0 (NoCam)", "Aimbot2")
+createToggleWithDropdown("Aimbot (Normal)", "Aimbot", "AimbotTrigger")
+createToggleWithDropdown("Aimbot 1.0 (360)", "Aimbot1", "Aimbot1Trigger")
+createToggle("Aimbot 2.0 (Silent)", "Aimbot2")
+createToggle("Third Person", "ThirdPerson")
 createToggle("Bunnyhop (Boost)", "Bunnyhop")
 createToggle("ESP (Wallhack)", "ESP")
 createToggle("Spinbot", "Spinbot")
 createToggle("Kill Sound", "KillSound")
 
 local friendsBtn = Instance.new("TextButton", mainFrame)
-friendsBtn.Size = UDim2.new(0.94, 0, 0, 32)
-friendsBtn.Position = UDim2.new(0.03, 0, 0.87, 0)
+friendsBtn.Size = UDim2.new(0.94, 0, 0, 30)
+friendsBtn.Position = UDim2.new(0.03, 0, 0.88, 0)
 friendsBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
 friendsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 friendsBtn.Font = Enum.Font.GothamBold
@@ -377,6 +471,13 @@ end
 
 RunService.RenderStepped:Connect(function()
     updateESP()
+
+    -- Логика 3rd Person
+    if settings.ThirdPerson then
+        lp.CameraMode = Enum.CameraMode.Classic
+        lp.CameraMinZoomDistance = 10
+        lp.CameraMaxZoomDistance = 15
+    end
     
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= lp and p.Character and p.Character:FindFirstChildOfClass("Humanoid") then
@@ -412,18 +513,18 @@ RunService.RenderStepped:Connect(function()
         rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(60), 0)
     end
     
-    -- Обычный аимбот (с проверкой FOV по экрану)
+    -- Обычный Аимбот
     if settings.Aimbot then
         local closest = nil
         local dist = settings.FovRadius
         for _, p in pairs(Players:GetPlayers()) do
-            if p ~= lp and not friendsList[p.Name] and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-                local root = p.Character.HumanoidRootPart
-                local pos, onScreen = camera:WorldToViewportPoint(root.Position)
+            if p ~= lp and not friendsList[p.Name] and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                local head = p.Character.Head
+                local pos, onScreen = camera:WorldToViewportPoint(head.Position)
                 if onScreen then
                     local d = (Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2) - Vector2.new(pos.X, pos.Y)).Magnitude
-                    if d < dist and isValidTarget(root, p.Name) then
-                        closest = root
+                    if d < dist and isValidTarget(head, p.Name) then
+                        closest = head
                         dist = d
                     end
                 end
@@ -431,44 +532,51 @@ RunService.RenderStepped:Connect(function()
         end
         if closest then
             camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
+            if settings.AimbotTrigger then
+                triggerShoot()
+            end
         end
     end
 
-    -- Aimbot 1.0 (360 градусов, камера наводится)
+    -- Aimbot 1.0 (360)
     if settings.Aimbot1 then
         local closest = nil
         local dist = 99999
         for _, p in pairs(Players:GetPlayers()) do
-            if p ~= lp and not friendsList[p.Name] and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-                local root = p.Character.HumanoidRootPart
-                local d = (root.Position - camera.CFrame.Position).Magnitude
-                if d < dist and isValidTarget(root, p.Name) then
-                    closest = root
+            if p ~= lp and not friendsList[p.Name] and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                local head = p.Character.Head
+                local d = (head.Position - camera.CFrame.Position).Magnitude
+                if d < dist and isValidTarget(head, p.Name) then
+                    closest = head
                     dist = d
                 end
             end
         end
         if closest then
             camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
+            if settings.Aimbot1Trigger then
+                triggerShoot()
+            end
         end
     end
     
-    -- Aimbot 2.0 (Silent / Без движения камеры, но активный поиск цели)
+    -- Aimbot 2.0 (Silent / NoCam)
     if settings.Aimbot2 then
         local closest = nil
         local dist = 99999
         for _, p in pairs(Players:GetPlayers()) do
-            if p ~= lp and not friendsList[p.Name] and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-                local root = p.Character.HumanoidRootPart
-                local d = (root.Position - camera.CFrame.Position).Magnitude
-                if d < dist and isValidTarget(root, p.Name) then
-                    closest = root
+            if p ~= lp and not friendsList[p.Name] and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+                local head = p.Character.Head
+                local d = (head.Position - camera.CFrame.Position).Magnitude
+                if d < dist and isValidTarget(head, p.Name) then
+                    closest = head
                     dist = d
                 end
             end
         end
         if closest then
-            -- Цель найдена и зафиксирована в фоне, но камера игрока не двигается
+            -- Silent логика: экран на месте, но автострельба бьет прямо по врагу
+            triggerShoot()
         end
     end
 end)
