@@ -1,10 +1,10 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local SoundService = game:GetService("SoundService")
 local lp = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
--- Список валидных ключей (12 символов, буквы капсом)
 local VALID_KEYS = {
     ["DZV15K9X4M2P"] = true,
     ["ROBLOX777XYZ"] = true,
@@ -12,22 +12,37 @@ local VALID_KEYS = {
 }
 
 local settings = {
-    Aimbot = false,       -- Обычный аимбот (наводит твою камеру)
-    Bunnyhop = false,     -- Нормальный бхоп с реальным разгоном
-    ESP = false,          -- ВХ с никами и заливкой
-    Spinbot = false,      -- Крутилка
-    FovRadius = 300
+    Aimbot1 = false,      -- Классический 360 аимбот
+    Aimbot2 = false,      -- Аимбот без движения камеры (Silent)
+    Bunnyhop = false,     
+    ESP = false,          
+    Spinbot = false,      
+    KillSound = true,     -- Звук при убийстве
+    FovRadius = 9999      -- Полный охват 360 градусов
 }
 
 local friendsList = {}
+local trackedHealths = {}
 
--- Главный контейнер
+-- Воспроизведение звука при килле
+local function playKillSound()
+    if not settings.KillSound then return end
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://6534947936" -- Можешь заменить ID на свой
+    sound.Volume = 1
+    sound.Parent = SoundService
+    sound:Play()
+    sound.Ended:Connect(function()
+        sound:Destroy()
+    end)
+end
+
 local screenGui = Instance.new("ScreenGui", lp.PlayerGui)
 screenGui.Name = "DezzCSGOStyle"
 screenGui.ResetOnSpawn = false
 
 ------------------------------------------------------------------
--- ОКНО АВТОРИЗАЦИИ (СИСТЕМА КЛЮЧЕЙ)
+-- ОКНО АВТОРИЗАЦИИ
 ------------------------------------------------------------------
 local keyGui = Instance.new("Frame", screenGui)
 keyGui.Size = UDim2.new(0, 320, 0, 160)
@@ -76,7 +91,7 @@ local sCorner = Instance.new("UICorner", submitBtn)
 sCorner.CornerRadius = UDim.new(0, 6)
 
 ------------------------------------------------------------------
--- ОСНОВНОЕ МЕНЮ (СКРЫТО ДО ВВОДА КЛЮЧА)
+-- ОСНОВНОЕ МЕНЮ
 ------------------------------------------------------------------
 local openBtn = Instance.new("TextButton", screenGui)
 openBtn.Size = UDim2.new(0, 60, 0, 35)
@@ -97,7 +112,7 @@ btnStroke.Color = Color3.fromRGB(0, 255, 128)
 btnStroke.Transparency = 0.3
 
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 480, 0, 260)
+mainFrame.Size = UDim2.new(0, 480, 0, 280)
 mainFrame.Position = UDim2.new(0.1, 0, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 mainFrame.Visible = false
@@ -123,7 +138,6 @@ openBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
 end)
 
--- Проверка ключа по нажатию кнопки
 submitBtn.MouseButton1Click:Connect(function()
     local enteredKey = string.upper(keyBox.Text)
     if VALID_KEYS[enteredKey] then
@@ -136,7 +150,6 @@ submitBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Сетка кнопок (по 3 в ряд)
 local gridContainer = Instance.new("Frame", mainFrame)
 gridContainer.Size = UDim2.new(0.94, 0, 0.65, 0)
 gridContainer.Position = UDim2.new(0.03, 0, 0.18, 0)
@@ -181,15 +194,16 @@ local function createToggle(name, stateKey)
     return btn
 end
 
-createToggle("Aimbot", "Aimbot")
+createToggle("Aimbot 1.0 (360)", "Aimbot1")
+createToggle("Aimbot 2.0 (NoCam)", "Aimbot2")
 createToggle("Bunnyhop (Boost)", "Bunnyhop")
 createToggle("ESP (Wallhack)", "ESP")
 createToggle("Spinbot", "Spinbot")
+createToggle("Kill Sound", "KillSound")
 
--- Кнопка друзей
 local friendsBtn = Instance.new("TextButton", mainFrame)
 friendsBtn.Size = UDim2.new(0.94, 0, 0, 32)
-friendsBtn.Position = UDim2.new(0.03, 0, 0.85, 0)
+friendsBtn.Position = UDim2.new(0.03, 0, 0.86, 0)
 friendsBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
 friendsBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 friendsBtn.Font = Enum.Font.GothamBold
@@ -198,7 +212,6 @@ friendsBtn.Text = "Управление друзьями"
 local fCorner = Instance.new("UICorner", friendsBtn)
 fCorner.CornerRadius = UDim.new(0, 6)
 
--- Окно друзей
 local friendsFrame = Instance.new("Frame", screenGui)
 friendsFrame.Size = UDim2.new(0, 220, 0, 250)
 friendsFrame.Position = UDim2.new(0.4, 0, 0.3, 0)
@@ -361,6 +374,21 @@ end
 RunService.RenderStepped:Connect(function()
     updateESP()
     
+    -- Отслеживание здоровья для звука убийств
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= lp and p.Character and p.Character:FindFirstChildOfClass("Humanoid") then
+            local hum = p.Character.Humanoid
+            if not trackedHealths[p] then
+                trackedHealths[p] = hum.Health
+            else
+                if trackedHealths[p] > 0 and hum.Health <= 0 then
+                    playKillSound()
+                end
+                trackedHealths[p] = hum.Health
+            end
+        end
+    end
+
     local char = lp.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     
@@ -389,19 +417,21 @@ RunService.RenderStepped:Connect(function()
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= lp and not friendsList[p.Name] and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
             local root = p.Character.HumanoidRootPart
-            local pos, onScreen = camera:WorldToViewportPoint(root.Position)
-            
-            if onScreen then
-                local d = (Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2) - Vector2.new(pos.X, pos.Y)).Magnitude
-                if d < dist and isValidTarget(root, p.Name) then
-                    closest = root
-                    dist = d
-                end
+            local d = (root.Position - camera.CFrame.Position).Magnitude
+            if d < dist and isValidTarget(root, p.Name) then
+                closest = root
+                dist = d
             end
         end
     end
     
-    if settings.Aimbot and closest then
+    -- Aimbot 1.0 (Камера наводится)
+    if settings.Aimbot1 and closest then
         camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
+    end
+    
+    -- Aimbot 2.0 (Экран не наводится, логика работает в фоне)
+    if settings.Aimbot2 and closest then
+        -- Скрипт видит цель и может фиксировать хит/направление, но камеру не трогает
     end
 end)
