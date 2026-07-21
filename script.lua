@@ -4,7 +4,7 @@ local lp = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 local VALID_KEYS = {
-    ["DZV15K9X4M2P"] = true,
+    ["1"] = true,
     ["ROBLOX777XYZ"] = true,
     ["DEZZPRO99ABC"] = true
 }
@@ -24,23 +24,25 @@ local settings = {
 
 local friendsList = {}
 
--- Моментальный обход задержек и выстрел
-local function triggerShoot()
+-- Точный форсированный выстрел через RemoteEvent оружия
+local function triggerShoot(targetPart)
     pcall(function()
         local char = lp.Character
-        if char then
-            local tool = char:FindFirstChildOfClass("Tool")
-            if tool then
-                for _, v in pairs(tool:GetDescendants()) do
-                    if v:IsA("NumberValue") or v:IsA("IntValue") then
-                        local n = v.Name:lower()
-                        if n:find("cooldown") or n:find("firerate") or n:find("delay") or n:find("fire") then
-                            v.Value = 0
-                        end
+        if not char then return end
+        local tool = char:FindFirstChildOfClass("Tool")
+        if tool then
+            -- Ищем внутри оружия сетевое событие стрельбы
+            for _, descendant in pairs(tool:GetDescendants()) do
+                if descendant:IsA("RemoteEvent") then
+                    local name = descendant.Name:lower()
+                    if name:find("fire") or name:find("shoot") or name:find("hit") or name:find("gun") then
+                        descendant:FireServer(targetPart.Position)
+                        return
                     end
                 end
-                tool:Activate()
             end
+            -- Запасной вариант, если RemoteEvent не найден напрямую
+            tool:Activate()
         end
     end)
 end
@@ -74,7 +76,7 @@ keyTitle.BackgroundTransparency = 1
 keyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 keyTitle.Font = Enum.Font.GothamBold
 keyTitle.TextSize = 14
-keyTitle.Text = "DEZZ V16 // FLICK EDITION"
+keyTitle.Text = "DEZZ V17 // FLICK EDITION"
 
 local keyBox = Instance.new("TextBox", keyGui)
 keyBox.Size = UDim2.new(0.85, 0, 0, 38)
@@ -389,7 +391,7 @@ local function isValidTarget(targetPart, playerName)
     return true
 end
 
--- Обновленный ESP: жирная заливка, мелкие ники
+-- ESP: жирная заливка, мелкие ники
 local function updateESP()
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= lp and player.Character then
@@ -399,8 +401,8 @@ local function updateESP()
                 if not hl then
                     hl = Instance.new("Highlight")
                     hl.Name = "DezzHighlight"
-                    hl.FillTransparency = 0.15  -- Пожирнее заливка
-                    hl.OutlineTransparency = 0  -- Четкий контур
+                    hl.FillTransparency = 0.15
+                    hl.OutlineTransparency = 0
                     hl.Parent = altChar
                 end
                 hl.Adornee = altChar
@@ -427,7 +429,7 @@ local function updateESP()
                     lbl.Size = UDim2.new(1, 0, 1, 0)
                     lbl.BackgroundTransparency = 1
                     lbl.TextStrokeTransparency = 0
-                    lbl.TextSize = 11  -- Ник мелкий
+                    lbl.TextSize = 11
                     lbl.Font = Enum.Font.GothamBold
                     lbl.Text = player.Name
                 end
@@ -466,7 +468,6 @@ RunService.RenderStepped:Connect(function()
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     local rootPart = char:FindFirstChild("HumanoidRootPart")
     
-    -- Bunnyhop 1.5x
     if settings.Bunnyhop and humanoid and rootPart then
         if humanoid.FloorMaterial ~= Enum.Material.Air then
             humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
@@ -481,7 +482,7 @@ RunService.RenderStepped:Connect(function()
         rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(60), 0)
     end
     
-    -- Обычный Аимбот
+    -- Обычный Аимбот + Триггербот
     if settings.Aimbot then
         local closest = nil
         local dist = settings.FovRadius
@@ -501,12 +502,12 @@ RunService.RenderStepped:Connect(function()
         if closest then
             camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
             if settings.AimbotTrigger then
-                triggerShoot()
+                triggerShoot(closest)
             end
         end
     end
 
-    -- Aimbot 1.0 (360)
+    -- Aimbot 1.0 (360) + Триггербот
     if settings.Aimbot1 then
         local closest = nil
         local dist = 99999
@@ -523,12 +524,12 @@ RunService.RenderStepped:Connect(function()
         if closest then
             camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
             if settings.Aimbot1Trigger then
-                triggerShoot()
+                triggerShoot(closest)
             end
         end
     end
     
-    -- Aimbot 2.0 (Silent / Моментальный хит в голову без движения камеры)
+    -- Aimbot 2.0 (Silent / Мгновенная атака цели в фоновом режиме)
     if settings.Aimbot2 then
         local closest = nil
         local dist = 99999
@@ -543,14 +544,7 @@ RunService.RenderStepped:Connect(function()
             end
         end
         if closest then
-            -- Мгновенная переадресация взгляда оружия на цель на 0.0001 сек для регистрации попадания
-            pcall(function()
-                local tool = char:FindFirstChildOfClass("Tool")
-                if tool then
-                    -- Перенаправляем луч камеры в серверной логике или активируем инструмент во врага
-                    tool:Activate()
-                end
-            end)
+            triggerShoot(closest)
         end
     end
 end)
