@@ -5,7 +5,7 @@ local lp = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 local VALID_KEYS = {
-    ["DZV15K9X4M2P"] = true,
+    ["1"] = true,
     ["ROBLOX777XYZ"] = true,
     ["DEZZPRO99ABC"] = true
 }
