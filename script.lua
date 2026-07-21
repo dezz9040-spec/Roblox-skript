@@ -1,10 +1,11 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
 local lp = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 local VALID_KEYS = {
-    ["1"] = true,
+    ["DZV15K9X4M2P"] = true,
     ["ROBLOX777XYZ"] = true,
     ["DEZZPRO99ABC"] = true
 }
@@ -24,25 +25,18 @@ local settings = {
 
 local friendsList = {}
 
--- Точный форсированный выстрел через RemoteEvent оружия
-local function triggerShoot(targetPart)
+-- Моментальный обход для кликера в Флике
+local function triggerShoot()
     pcall(function()
         local char = lp.Character
-        if not char then return end
-        local tool = char:FindFirstChildOfClass("Tool")
-        if tool then
-            -- Ищем внутри оружия сетевое событие стрельбы
-            for _, descendant in pairs(tool:GetDescendants()) do
-                if descendant:IsA("RemoteEvent") then
-                    local name = descendant.Name:lower()
-                    if name:find("fire") or name:find("shoot") or name:find("hit") or name:find("gun") then
-                        descendant:FireServer(targetPart.Position)
-                        return
-                    end
-                end
+        if char then
+            local tool = char:FindFirstChildOfClass("Tool")
+            if tool then
+                tool:Activate()
+                VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
+                task.wait()
+                VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame)
             end
-            -- Запасной вариант, если RemoteEvent не найден напрямую
-            tool:Activate()
         end
     end)
 end
@@ -76,7 +70,7 @@ keyTitle.BackgroundTransparency = 1
 keyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 keyTitle.Font = Enum.Font.GothamBold
 keyTitle.TextSize = 14
-keyTitle.Text = "DEZZ V17 // FLICK EDITION"
+keyTitle.Text = "DEZZ V16 // FLICK EDITION"
 
 local keyBox = Instance.new("TextBox", keyGui)
 keyBox.Size = UDim2.new(0.85, 0, 0, 38)
@@ -502,7 +496,7 @@ RunService.RenderStepped:Connect(function()
         if closest then
             camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
             if settings.AimbotTrigger then
-                triggerShoot(closest)
+                triggerShoot()
             end
         end
     end
@@ -524,12 +518,12 @@ RunService.RenderStepped:Connect(function()
         if closest then
             camera.CFrame = CFrame.new(camera.CFrame.Position, closest.Position)
             if settings.Aimbot1Trigger then
-                triggerShoot(closest)
+                triggerShoot()
             end
         end
     end
     
-    -- Aimbot 2.0 (Silent / Мгновенная атака цели в фоновом режиме)
+    -- Aimbot 2.0 (Silent / Моментальный хит в голову без движения камеры)
     if settings.Aimbot2 then
         local closest = nil
         local dist = 99999
@@ -544,7 +538,7 @@ RunService.RenderStepped:Connect(function()
             end
         end
         if closest then
-            triggerShoot(closest)
+            triggerShoot()
         end
     end
 end)
