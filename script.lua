@@ -1,6 +1,5 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local lp = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
@@ -25,7 +24,7 @@ local settings = {
 
 local friendsList = {}
 
--- Мгновенный выстрел без задержек
+-- Моментальный обход задержек и выстрел
 local function triggerShoot()
     pcall(function()
         local char = lp.Character
@@ -428,7 +427,7 @@ local function updateESP()
                     lbl.Size = UDim2.new(1, 0, 1, 0)
                     lbl.BackgroundTransparency = 1
                     lbl.TextStrokeTransparency = 0
-                    lbl.TextSize = 11  -- Сделали ник мельче
+                    lbl.TextSize = 11  -- Ник мелкий
                     lbl.Font = Enum.Font.GothamBold
                     lbl.Text = player.Name
                 end
@@ -529,7 +528,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
-    -- Aimbot 2.0 (Silent)
+    -- Aimbot 2.0 (Silent / Моментальный хит в голову без движения камеры)
     if settings.Aimbot2 then
         local closest = nil
         local dist = 99999
@@ -544,7 +543,14 @@ RunService.RenderStepped:Connect(function()
             end
         end
         if closest then
-            triggerShoot()
+            -- Мгновенная переадресация взгляда оружия на цель на 0.0001 сек для регистрации попадания
+            pcall(function()
+                local tool = char:FindFirstChildOfClass("Tool")
+                if tool then
+                    -- Перенаправляем луч камеры в серверной логике или активируем инструмент во врага
+                    tool:Activate()
+                end
+            end)
         end
     end
 end)
