@@ -1,6 +1,6 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local lp = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
@@ -25,19 +25,13 @@ local settings = {
 
 local friendsList = {}
 
--- Моментальный обход для кликера в Флике
+-- Гарантированный триггер выстрела для мобилок и ПК
 local function triggerShoot()
     pcall(function()
-        local char = lp.Character
-        if char then
-            local tool = char:FindFirstChildOfClass("Tool")
-            if tool then
-                tool:Activate()
-                VirtualUser:Button1Down(Vector2.new(0,0), camera.CFrame)
-                task.wait()
-                VirtualUser:Button1Up(Vector2.new(0,0), camera.CFrame)
-            end
-        end
+        -- Эмулируем нажатие на экран (работает для мобильных эксплойтов и ПК)
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+        task.wait(0.01)
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
     end)
 end
 
@@ -385,7 +379,7 @@ local function isValidTarget(targetPart, playerName)
     return true
 end
 
--- ESP: жирная заливка, мелкие ники
+-- ESP
 local function updateESP()
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= lp and player.Character then
@@ -523,7 +517,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
     
-    -- Aimbot 2.0 (Silent / Моментальный хит в голову без движения камеры)
+    -- Aimbot 2.0 (Silent / Моментальный выстрел без наведения камеры)
     if settings.Aimbot2 then
         local closest = nil
         local dist = 99999
