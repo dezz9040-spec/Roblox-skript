@@ -64,7 +64,7 @@ keyTitle.BackgroundTransparency = 1
 keyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 keyTitle.Font = Enum.Font.GothamBold
 keyTitle.TextSize = 14
-keyTitle.Text = "DEZZ V16 // KEY AUTHORIZATION"
+keyTitle.Text = "DEZZ V17 // KEY AUTHORIZATION"
 
 local keyBox = Instance.new("TextBox", keyGui)
 keyBox.Size = UDim2.new(0.85, 0, 0, 38)
